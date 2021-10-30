@@ -1,21 +1,25 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { ComentEntity } from "src/entities/coment/coment.entity";
 import { TaskEntity } from "src/entities/task/task.entity";
+import { TaskDescriptionEntity } from "src/entities/taskDescription/taskDescription.entity";
 import { TaskListEntity } from "src/entities/taskList/taskList.entity";
-import { TaskController, TaskListController } from "./controllers";
-import { TaskListService, TaskService } from "./service";
+import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConnect.entity";
+import { TaskListController } from "./controllers";
+import { TaskListService } from "./service";
 
 @Module({
   imports: [TypeOrmModule.forFeature([
     TaskEntity,
-    TaskListEntity
+    TaskListEntity,
+    TaskListConnectEntity,
+    TaskDescriptionEntity,
+    ComentEntity,
   ])],
   providers: [
-    TaskService,
     TaskListService
   ],
   controllers: [
-    TaskController,
     TaskListController
   ],
 })

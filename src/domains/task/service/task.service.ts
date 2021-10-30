@@ -1,99 +1,148 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { TaskEntity } from "src/entities/task/task.entity";
+import { TaskDescriptionEntity } from "src/entities/taskDescription/taskDescription.entity";
 import { TaskListEntity } from "src/entities/taskList/taskList.entity";
+import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConnect.entity";
 import { Repository } from "typeorm";
 import { CreateTaskDTO, EditTaskDTO, TaskDTO } from "../dto/task";
 
 type CreateTaskRes = {
-  data: CreateTaskDTO;
-  taskListId: number;
+  taskDTO: CreateTaskDTO,
+  taskListId: number,
 }
 
 type EditTaskRes = {
-  data: EditTaskDTO,
-  taskId: number;
+  taskDTO: EditTaskDTO,
+  taskId: number,
 }
 
 @Injectable()
 export class TaskService {
   constructor(
+    @InjectRepository(TaskEntity)
+    private repository: Repository<TaskEntity>,
+    @InjectRepository(TaskDescriptionEntity)
+    private descriptionReposiroty: Repository<TaskDescriptionEntity>,
+    @InjectRepository(TaskListConnectEntity)
+    private connectRepository: Repository<TaskListConnectEntity>,
     @InjectRepository(TaskListEntity)
     private taskListRepository: Repository<TaskListEntity>,
-    @InjectRepository(TaskEntity)
-    private taskRepository: Repository<TaskEntity>,
-  ) {}
+  ){}
 
-  public async checkAccess(taskId: number): Promise<boolean> {
-    const task = await this.taskRepository.findOne(taskId);
+
+  public async chechAccess (taskId: number): Promise<boolean> {
+    const task = await this.repository.findOne(taskId);
 
     if(!task) throw new NotFoundException();
 
     return !!task;
-  };
+  }
 
-  public async getListOfTaskByTaskListId(tasklistId: number): Promise<TaskDTO[]> {
-    const taskList = await this.taskListRepository.findOne(tasklistId)
-    if(!taskList) throw new NotFoundException();
-
-    const listOfTask = await this.taskRepository.find({
-      where: { isArchived: false, taskListId: taskList.id },
-      order: { created_at: 'ASC' },
+  public async getListOfTask (): Promise<TaskDTO[]> {
+    const list = await this.repository.find({
+      where: { isArchived: false },
+      order: { created_at: 'ASC' }
     });
 
-    return listOfTask.map(task => ({
-      id: task.id,
-      taskListId: task.taskListId,
-      caption: task.caption,
-      description: task.description,
+    return list.map(item => ({
+      id: item.id,
+      caption: item.caption,
+      description: item.taskDescription.caption,
     }));
-  };
+  }
 
-  public async createTask(taskDTO: CreateTaskRes): Promise<TaskDTO> {
-    const { data, taskListId } = taskDTO;
+  public async getListOfTaskByTaskListId (taskListId: number): Promise<TaskDTO[]> {
+    const connectList = await this.connectRepository.find({
+      where: { isArchived: false, taskListId },
+      order: { created_at: 'ASC' }
+    });
+
+    const taskList = await this.repository.find({
+      where: { isArchived: false },
+      order: { created_at: 'ASC' }
+    });
+
+    const list: Array<TaskDTO> = [];
+
+    connectList.forEach(connect => {
+      const taskIndex = taskList.findIndex(task => task.id === connect.taskId)
+      const task = taskList[taskIndex];
+      list.push({
+        id: task.id,
+        caption: task.caption,
+        description: task.taskDescription.caption,
+      });
+    });
+
+    return list
+  }
+
+  public async createTask (data: CreateTaskRes): Promise<TaskDTO> {
+    const { taskDTO, taskListId } = data;
+
+    const taskData = { caption: taskDTO.caption };
+    const taskDescriptionData = { caption: taskDTO.description };
 
     const taskList = await this.taskListRepository.findOne(taskListId);
-    if(!taskList) throw new NotFoundException();
 
-    const savedTask = await this.taskRepository.save({
-      caption: data.caption,
-      description: data.description,
+    const createdTask = await this.repository.save(taskData);
+
+    const createdTaskDescription = await this.descriptionReposiroty.save({
+      task: createdTask,
+      caption: taskDescriptionData.caption,
+    });
+
+    await this.connectRepository.save({
+      task: createdTask,
       taskList
     });
 
-    return {
-      id: savedTask.id,
-      caption: savedTask.caption,
-      description: savedTask.description,
-      taskListId: savedTask.taskListId,
-    };
-  };
+    return ({
+      id: createdTask.id,
+      caption: createdTask.caption,
+      description: createdTaskDescription.caption,
+    });
+  }
 
-  public async editTask(taskDTO: EditTaskRes): Promise<TaskDTO> {
-    const { data, taskId } = taskDTO;
+  public async updateTask (data: EditTaskRes): Promise<TaskDTO> {
+    const { taskDTO, taskId } = data;
+    const taskData = { caption: taskDTO.caption };
+    const taskDescriptionData = { caption: taskDTO.description };
 
-    const task = await this.taskRepository.findOne(taskId);
+    const task = await this.repository.findOne(taskId);
     if(!task) throw new NotFoundException();
 
-    task.caption = data.caption;
-    task.description = data.description;
+    const taskDescription = await this.descriptionReposiroty.findOne(task.taskDescriptionId);
+    if(!taskDescription) throw new NotFoundException();
 
-    const updatedTask = await this.taskRepository.save(task);
+    task.caption = taskData.caption;
 
-    return {
-      id: updatedTask.id,
-      taskListId: updatedTask.taskListId,
-      caption: updatedTask.caption,
-      description: updatedTask.description,
+    taskDescription.caption = taskDescriptionData.caption;
+
+    const createdTask = await this.repository.save(task);
+    const createdTaskDescription = await this.repository.save(taskDescription);
+
+    const createdData: TaskDTO = {
+      id: createdTask.id,
+      caption: createdTask.caption,
+      description: createdTaskDescription.caption
     };
-  };
 
-  public async removeTask(taskId: number): Promise<void> {
-    const task = await this.taskRepository.findOne(taskId);
+    return createdData;
+  }
+
+  public async removeTask (taskId: number): Promise<void> {
+    const task = await this.repository.findOne(taskId);
     if(!task) throw new NotFoundException();
 
+    const taskDescription = await this.descriptionReposiroty.findOne(task.taskDescriptionId);
+    if(!taskDescription) throw new NotFoundException();
+
+    taskDescription.isArchived = true;
     task.isArchived = true;
 
-    await this.taskRepository.save(task);
-  };
+    await this.repository.save(task);
+    await this.descriptionReposiroty.save(taskDescription);
+  }
 }
