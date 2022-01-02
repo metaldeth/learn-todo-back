@@ -1,6 +1,7 @@
 import { Column, Entity, ManyToOne } from "typeorm";
 import { BasicEntity } from "../base.entity";
 import { TaskEntity } from "../task/task.entity";
+import { UserEntity } from "../user/user.entity";
 
 @Entity({ name: 'coment' })
 export class ComentEntity extends BasicEntity {
@@ -12,4 +13,10 @@ export class ComentEntity extends BasicEntity {
 
   @ManyToOne(() => TaskEntity, (task) => task.coment, { onDelete: "CASCADE" })
   task: TaskEntity;
+
+  @Column({ type: 'int' })
+  useId: number;
+
+  @ManyToOne(() => UserEntity, user => user.coment, { onDelete: 'CASCADE' })
+  user: UserEntity;
 }
