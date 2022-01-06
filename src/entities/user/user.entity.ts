@@ -1,6 +1,7 @@
 import { Column, Entity, OneToMany } from "typeorm";
 import { BasicEntity } from "../base.entity";
 import { ComentEntity } from "../coment/coment.entity";
+import { UserTaskListConnectEntity } from "../userTaskListConnect/userTaskListConnect.entity";
 
 @Entity({ name: 'user' })
 export class UserEntity extends BasicEntity {
@@ -12,4 +13,7 @@ export class UserEntity extends BasicEntity {
 
   @OneToMany(() => ComentEntity, coment => coment.user, { onDelete: 'CASCADE' })
   coment: ComentEntity[];
+
+  @OneToMany(() => UserTaskListConnectEntity, taskListConnect => taskListConnect.user, { onDelete: 'CASCADE' })
+  taskListConnect: UserTaskListConnectEntity[]
 }

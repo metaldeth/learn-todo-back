@@ -9,4 +9,4 @@ export class CreateTaskDTO {
   @ApiProperty({ description: 'The description of the task' })
   @IsString()
   description: string;
-}
+} 
