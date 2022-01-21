@@ -21,12 +21,13 @@ export class AuthService {
   ) {}
 
   async validateUser(
-    email: string,
+    name: string,
     password: string,
   ): Promise<MainUserDataDTO | null> {
-    const lowCaseEmail = email.toLowerCase();
+    console.log('validateUser');
+    const lowCaseName = name.toLowerCase();
     const user = await this.userRepository.findOne({
-      where: { email: lowCaseEmail },
+      where: { name: lowCaseName },
     });
 
     if (!user) return null;
@@ -49,7 +50,7 @@ export class AuthService {
   }
 
   async login(user: any): Promise<TokenPairDTO> {
-    const payload = { userName: user.userName, sub: user.id };
+    const payload = { name: user.name, sub: user.id };
     return{ accessToken: this.jwtService.sign(payload) };
   }
 
@@ -59,7 +60,9 @@ export class AuthService {
       where: { name: nameInLowerCase },
     });
 
-    if(!searchedUser) throw new NotFoundException();
+    console.log('=================================================');
+
+    if(searchedUser) throw new NotFoundException();
 
     const encryptedPass = await bcrypt.hash(user.password, HASH_ROUNDS);
     return await this.userRepository.save({

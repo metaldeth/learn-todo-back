@@ -1,6 +1,9 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { TaskListEntity } from "src/entities/taskList/taskList.entity";
+import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConnect.entity";
+import { UserEntity } from "src/entities/user/user.entity";
+import { UserTaskListConnectEntity } from "src/entities/userTaskListConnect/userTaskListConnect.entity";
 import { Repository } from "typeorm";
 import { CreateTaskListDTO, EditTaskListDTO, TaskListDTO } from "../dto/taskList";
 
@@ -14,6 +17,12 @@ export class TaskListService {
   constructor(
     @InjectRepository(TaskListEntity)
     private repository: Repository<TaskListEntity>,
+    @InjectRepository(TaskListConnectEntity)
+    private connectTaskRepository: Repository<TaskListConnectEntity>,
+    @InjectRepository(UserTaskListConnectEntity)
+    private connectUserRepository: Repository<UserTaskListConnectEntity>,
+    @InjectRepository(UserEntity)
+    private userRepository: Repository<UserEntity>,
   ){}
 
   public async checkAccess(taskListId: number): Promise<boolean> {
@@ -25,13 +34,40 @@ export class TaskListService {
   public async fetchListOfTaskList(): Promise<TaskListDTO[]> {
     const listOfTaskList = await this.repository.find({
       where: { isArchived: false },
+      // relations: ['taskList'],
       order: { created_at: 'ASC' }
     });
 
-    return listOfTaskList.map(item => ({
-      id: item.id,
-      caption: item.caption,
-    }));
+    return listOfTaskList.map(taskList => ({
+      id: taskList.id,
+      caption: taskList.caption,
+      listOfMember: taskList.userConnect.map(connect => ({
+        id: connect.userId,
+        isOwner: connect.isOwner,
+        name: connect.user.name,
+      }))
+    }))
+  }
+
+  public async fetchListOFTaskListByTask(taskId: number): Promise<TaskListDTO[]> {
+    const listOfConnect = await this.connectTaskRepository.find({
+      where: { taskId },
+      order: { taskListId: 'ASC' }
+    });
+
+    listOfTaskList.map(taskList => ({
+      id: taskList.id,
+      caption: taskList.caption,
+      listOfMember: taskList.userConnect.map(connect => ({
+        id: connect.userId,
+        isOwner: connect.isOwner,
+        name: connect.user.name,
+      }))
+    }))
+  }
+
+  public async fetchListOfTaskListByUserId(userId: number): Promise<TaskListDTO[]> {
+    const listOf
   }
 
   public async createTaskList(data: CreateTaskListDTO): Promise<TaskListDTO> {
