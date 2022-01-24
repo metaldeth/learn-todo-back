@@ -31,59 +31,113 @@ export class TaskListService {
     return !!taskList; //todo
   }
 
-  public async fetchListOfTaskList(): Promise<TaskListDTO[]> {
+  public async fetchListOfTaskList(userId: number): Promise<TaskListDTO[]> {
+    const listOfUser = await this.userRepository.find({
+      where: { isArchived: false },
+      order: { created_at: 'ASC' },
+    })
+    const mapOfUserName: Record<number, string> = {};
+    if(!listOfUser[0]) throw new NotFoundException();
+    listOfUser.forEach(user => mapOfUserName[user.id] = user.name);
+
+    const listOfConnect = await this.connectUserRepository.find({
+      where: { userId },
+      order: { taskListId: 'ASC' },
+    });
+
     const listOfTaskList = await this.repository.find({
       where: { isArchived: false },
-      // relations: ['taskList'],
-      order: { created_at: 'ASC' }
+      order: { created_at: 'ASC' },
     });
 
     return listOfTaskList.map(taskList => ({
       id: taskList.id,
       caption: taskList.caption,
-      listOfMember: taskList.userConnect.map(connect => ({
+      listOfMember: listOfConnect.map(connect => ({
         id: connect.userId,
         isOwner: connect.isOwner,
-        name: connect.user.name,
+        name: mapOfUserName[connect.userId],
       }))
-    }))
+    }));
   }
 
-  public async fetchListOFTaskListByTask(taskId: number): Promise<TaskListDTO[]> {
-    const listOfConnect = await this.connectTaskRepository.find({
-      where: { taskId },
-      order: { taskListId: 'ASC' }
-    });
+  // public async fetchListOFTaskListByTask(taskId: number, userId: number): Promise<TaskListDTO[]> {
+  //   const listOfUser = await this.userRepository.find({
+  //     where: { isArchived: false },
+  //     order: { created_at: 'ASC' },
+  //   })
+  //   const mapOfUserName: Record<number, string> = {};
+  //   if(!listOfUser[0]) throw new NotFoundException();
+  //   listOfUser.forEach(user => mapOfUserName[user.id] = user.name);
 
-    listOfTaskList.map(taskList => ({
-      id: taskList.id,
-      caption: taskList.caption,
-      listOfMember: taskList.userConnect.map(connect => ({
-        id: connect.userId,
-        isOwner: connect.isOwner,
-        name: connect.user.name,
-      }))
-    }))
-  }
+  //   const listOfConnect = await this.connectUserRepository.find({
+  //     where: { userId },
+  //     order: { taskListId: 'ASC' },
+  //   });
 
-  public async fetchListOfTaskListByUserId(userId: number): Promise<TaskListDTO[]> {
-    const listOf
-  }
+  //   const listOfTaskList = await this.repository.find({
+  //     where: { isArchived: false },
+  //     order: { created_at: 'ASC' },
+  //   });
 
-  public async createTaskList(data: CreateTaskListDTO): Promise<TaskListDTO> {
+  //   return listOfTaskList.map(taskList => ({
+  //     id: taskList.id,
+  //     caption: taskList.caption,
+  //     listOfMember: listOfConnect.map(connect => ({
+  //       id: connect.userId,
+  //       isOwner: connect.isOwner,
+  //       name: mapOfUserName[connect.userId],
+  //     }))
+  //   }));
+  // }
+
+  public async createTaskList(
+    userId: number, 
+    data: CreateTaskListDTO
+  ): Promise<TaskListDTO> {
+    const user = await this.userRepository.findOne(userId);
+    if(!user) throw new NotFoundException();
+
     const createdTaskList = await this.repository.save(data);
+
+    const createdConnect = await this.connectUserRepository.save({
+      isOwner: true,
+      taskList: createdTaskList,
+      user
+    })
 
     return{
       id: createdTaskList.id,
       caption: createdTaskList.caption,
+      listOfMember: [
+        {
+          id: createdConnect.userId,
+          isOwner: createdConnect.isOwner,
+          name: user.name,
+        }
+      ]
     };
   }
 
   public async editTaskList(dataRes: EditTaskListRes): Promise<TaskListDTO> {
     const { data, taskListId } = dataRes;
 
+    const listOfUser = await this.userRepository.find({
+      where: { isArchived: false },
+      order: { created_at: 'ASC' },
+    })
+    const mapOfUserName: Record<number, string> = {};
+    if(!listOfUser[0]) throw new NotFoundException();
+    listOfUser.forEach(user => mapOfUserName[user.id] = user.name);
+
     const taskList = await this.repository.findOne(taskListId);
     if(!taskList) throw new NotFoundException();
+
+    const listOfConnect = await this.connectUserRepository.find({
+      where: { taskListId: taskList.id },
+      order: { userId: 'ASC' },
+    })
+    if(!listOfConnect[0]) throw new NotFoundException();
 
     taskList.caption = data.caption;
 
@@ -92,6 +146,11 @@ export class TaskListService {
     return{
       id: updatedTaskList.id,
       caption: updatedTaskList.caption,
+      listOfMember: listOfConnect.map(connect => ({
+        id: connect.userId,
+        isOwner: connect.isOwner,
+        name: mapOfUserName[connect.userId],
+      }))
     };
   }
 
