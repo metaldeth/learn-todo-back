@@ -5,7 +5,7 @@ import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConn
 import { UserEntity } from "src/entities/user/user.entity";
 import { UserTaskListConnectEntity } from "src/entities/userTaskListConnect/userTaskListConnect.entity";
 import { Repository } from "typeorm";
-import { CreateTaskListDTO, EditTaskListDTO, TaskListDTO } from "../dto/taskList";
+import { CreateTaskListDTO, EditTaskListDTO, MemberByTaskList, TaskListDTO } from "../dto/taskList";
 
 export type EditTaskListRes = {
   taskListId: number,
@@ -53,14 +53,21 @@ export class TaskListService {
       order: { created_at: 'ASC' },
     });
 
-    return listOfTaskList.map(taskList => ({
-      id: taskList.id,
-      caption: taskList.caption,
-      listOfMember: listOfConnect.map(connect => ({
+    const mapOfMemberList: Record<number, MemberByTaskList[]> = {};
+
+    listOfConnect.forEach(connect => {
+      mapOfMemberList[connect.taskListId] = mapOfMemberList[connect.taskListId] || [];
+      mapOfMemberList[connect.taskListId].push({
         id: connect.userId,
         isOwner: connect.isOwner,
         name: mapOfUserName[connect.userId],
-      }))
+      })
+    })
+
+    return listOfTaskList.map(taskList => ({
+      id: taskList.id,
+      caption: taskList.caption,
+      listOfMember: mapOfMemberList[taskList.id],
     }));
   }
 
