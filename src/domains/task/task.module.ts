@@ -6,6 +6,8 @@ import { TaskListEntity } from "src/entities/taskList/taskList.entity";
 import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConnect.entity";
 import { UserEntity } from "src/entities/user/user.entity";
 import { UserTaskListConnectEntity } from "src/entities/userTaskListConnect/userTaskListConnect.entity";
+import { TaskListController } from "./controllers";
+import { TaskListService } from "./service";
 
 @Module({
   imports: [TypeOrmModule.forFeature([
@@ -17,8 +19,10 @@ import { UserTaskListConnectEntity } from "src/entities/userTaskListConnect/user
     UserTaskListConnectEntity,
   ])],
   providers: [
+    TaskListService
   ],
   controllers: [
+    TaskListController
   ],
 })
 

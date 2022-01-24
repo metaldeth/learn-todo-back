@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { TaskListEntity } from "src/entities/taskList/taskList.entity";
 import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConnect.entity";
@@ -25,10 +25,13 @@ export class TaskListService {
     private userRepository: Repository<UserEntity>,
   ){}
 
-  public async checkAccess(taskListId: number): Promise<boolean> {
-    const taskList = await this.repository.findOne(taskListId);
-    if(!taskList) throw new NotFoundException(); 
-    return !!taskList; //todo
+  public async checkAccess(taskListId: number, userId: number): Promise<boolean> {
+    const connect = await this.connectUserRepository.findOne({
+      taskListId,
+      userId
+    })
+    if(!connect.isOwner) throw new ForbiddenException();
+    return connect.isOwner;
   }
 
   public async fetchListOfTaskList(userId: number): Promise<TaskListDTO[]> {
