@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { TaskEntity } from "src/entities/task/task.entity";
+import { TaskListEntity } from "src/entities/taskList/taskList.entity";
 import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConnect.entity";
 import { Repository } from "typeorm";
 import { CreateTaskDTO, EditTaskDTO, TaskDTO } from "../dto/task";
@@ -17,59 +18,73 @@ export class TaskService {
     private repository: Repository<TaskEntity>,
     @InjectRepository(TaskListConnectEntity)
     private connectRepository: Repository<TaskListConnectEntity>,
+    @InjectRepository(TaskListEntity)
+    private taskListRepository: Repository<TaskListEntity>,
   ){}
 
-  public async checkAccess(taskId: number): Promise<boolean> {
+  public async checkAccess(taskId: number, userId: number): Promise<boolean> {
     const task = await this.repository.findOne(taskId);
     if(!task) throw new NotFoundException(); 
     return !!task; //todo
   }
 
-  // public async fetchListOfTaskByTaskListId(taskListId: number): Promise<TaskDTO[]> {
-  //   const listOfTaskId = await this.listConnectRepository.findOne({
-  //     where: { taskListId },
-  //     order: { taskId: 'ASC' }
+  // public async fetchListOfTask(): Promise<TaskDTO[]> {
+  //   const listOfTask = await this.repository.find({
+  //     where: { isArchived: false },
+  //     order: { created_at: 'ASC' }
   //   });
 
-  //   const 
+  //   return listOfTask.map(item => ({
+  //     id: item.id,
+  //     caption: item.caption,
+  //     description: item.description
+  //   }));
   // }
 
-  public async fetchListOfTask(): Promise<TaskDTO[]> {
+  public async fetchListOfTaskByTaskListId(taskListId: number): Promise<TaskDTO[]> {
     const listOfTask = await this.repository.find({
       where: { isArchived: false },
-      order: { created_at: 'ASC' }
-    });
+      order: { created_at: 'ASC' },
+    })
 
-    return listOfTask.map(item => ({
-      id: item.id,
-      caption: item.caption,
-      description: item.description
-    }));
-  }
+    const mapOfTask: Record<number, TaskDTO> = {};
 
-  public async fetchListOfTaskByTaskList(taskListId: number): Promise<TaskDTO[]> {
+    listOfTask.forEach(task => mapOfTask[task.id] = task);
+
     const listOfConnect = await this.connectRepository.find({
       where: { taskListId },
       order: { taskId: 'ASC' }
     });
 
     return listOfConnect.map(item => ({
-      id: item.task.id,
-      caption: item.task.caption,
-      description: item.task.description,
+      id: item.taskId,
+      caption: mapOfTask[item.taskId].caption,
+      description: mapOfTask[item.taskId].description,
     }));
   }
 
-  public async createTask(data: CreateTaskDTO): Promise<TaskDTO> {
+  public async createTask(data: CreateTaskDTO, taskListId: number): Promise<TaskDTO> {
+    const taskList = await this.taskListRepository.findOne(taskListId);
+    if(!taskList) throw new NotFoundException();
+
     const createdTask = await this.repository.save({
       caption: data.caption,
       description: data.description,
     });
 
+    // const createtedTaskListConnect = await this.connectRepository.save({
+    //   taskList,
+    //   task: createdTask,
+    //   isArchived: false,
+    // })
+
     return{
       id: createdTask.id,
       caption: createdTask.caption,
       description: createdTask.caption,
+      // listOfTaskListId: [
+      //   createtedTaskListConnect.taskListId
+      // ]
     };
   }
 
@@ -84,10 +99,16 @@ export class TaskService {
 
     const updatedTask = await this.repository.save(task);
 
+    // const listOfConnect = await this.connectRepository.find({
+    //   where: { isArchived: false, taskId: task.id },
+    //   order: { taskListId: 'ASC' }
+    // })
+
     return{
       id: updatedTask.id,
       caption: updatedTask.caption,
       description: updatedTask.description,
+      // listOfTaskListId: listOfConnect.map(connect => connect.taskListId),
     };
   }
 

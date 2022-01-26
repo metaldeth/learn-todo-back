@@ -44,9 +44,9 @@ export class TaskListController {
   @Post('/taskList')
   public createTaskList(
     @User() user: UserData,
-    @Body() taskListDto: CreateTaskListDTO,
+    @Body() taskListDTO: CreateTaskListDTO,
   ): Promise<TaskListDTO> {
-    return this.service.createTaskList(user.userId, taskListDto);
+    return this.service.createTaskList(user.userId, taskListDTO);
   }
 
   @ApiOperation({ summary: 'Update the task list' })

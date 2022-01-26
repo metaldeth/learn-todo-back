@@ -41,8 +41,10 @@ export class AuthService {
   }
 
   async getUser(userId: number): Promise<MainUserDataDTO> {
+    console.log('getUser');
     const user = await this.userRepository.findOne(userId);
     if (!user) throw new NotFoundException();
+    console.table(user);
     return {
       id: user.id,
       name: user.name,

@@ -34,6 +34,14 @@ export class TaskListService {
     return connect.isOwner;
   }
 
+  public async checkMemberAccess(taskListId: number, userId: number): Promise<boolean> {
+    const connect = await this.connectUserRepository.findOne({
+      taskListId,
+      userId
+    })
+    return !!connect;
+  }
+
   public async fetchListOfTaskList(userId: number): Promise<TaskListDTO[]> {
     const listOfUser = await this.userRepository.find({
       where: { isArchived: false },
@@ -44,7 +52,7 @@ export class TaskListService {
     listOfUser.forEach(user => mapOfUserName[user.id] = user.name);
 
     const listOfConnect = await this.connectUserRepository.find({
-      where: { userId },
+      where: { userId, isArchived: false },
       order: { taskListId: 'ASC' },
     });
 
@@ -52,6 +60,12 @@ export class TaskListService {
       where: { isArchived: false },
       order: { created_at: 'ASC' },
     });
+
+    const mapOfTaskList: Record<number, TaskListEntity> = {};
+
+    listOfTaskList.forEach(taskList => {
+      mapOfTaskList[taskList.id] = taskList;
+    })
 
     const mapOfMemberList: Record<number, MemberByTaskList[]> = {};
 
@@ -64,11 +78,13 @@ export class TaskListService {
       })
     })
 
-    return listOfTaskList.map(taskList => ({
+    return listOfConnect.map(connect => {
+      const taskList = mapOfTaskList[connect.taskListId];
+      return{
       id: taskList.id,
       caption: taskList.caption,
       listOfMember: mapOfMemberList[taskList.id],
-    }));
+    }});
   }
 
   // public async fetchListOFTaskListByTask(taskId: number, userId: number): Promise<TaskListDTO[]> {
@@ -167,6 +183,16 @@ export class TaskListService {
   public async removeTaskList(taskListId: number): Promise<void> {
     const taskList = await this.repository.findOne(taskListId);
     if(!taskList) throw new NotFoundException();
+
+    const listOfConnect = await this.connectUserRepository.find({
+      where: { taskListId },
+      order: { userId: 'ASC' }
+    })
+
+    listOfConnect.forEach(async connect => {
+      connect.isArchived = true;
+      await this.connectUserRepository.save(connect);
+    })
 
     taskList.isArchived = true;
 

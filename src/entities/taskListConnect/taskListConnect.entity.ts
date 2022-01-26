@@ -17,4 +17,7 @@ export class TaskListConnectEntity {
   @ManyToOne(() => TaskListEntity, (taskList) => taskList.connect, { onDelete: 'CASCADE', primary: true })
   @JoinColumn()
   taskList: TaskListEntity;
+
+  @Column({ type: 'boolean', default: 'false' })
+  isArchived: boolean;
 }

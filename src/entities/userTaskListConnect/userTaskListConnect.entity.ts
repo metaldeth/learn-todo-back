@@ -20,4 +20,7 @@ export class UserTaskListConnectEntity{
 
   @Column({ type: 'bool' })
   isOwner: boolean;
+
+  @Column({ type: 'boolean', default: 'false' })
+  isArchived: boolean;
 }
