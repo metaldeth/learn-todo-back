@@ -17,7 +17,12 @@ export class TaskListDTO {
 
   @ApiProperty({ description: 'The caption of the task list' })
   caption: string;
+}
 
-  @ApiProperty({ description: 'The list members of the task list' })
+export class TaskListWithMemberListDTO {
+  @ApiProperty({ description: 'The data of the taskList' })
+  data: TaskListDTO;
+
+  @ApiProperty({ description: 'The list of member by taskList' })
   listOfMember: Array<MemberByTaskList>;
 }

@@ -40,8 +40,8 @@ export class TaskController {
     @User() user: UserData,
     @Param('taskListId') taskListId: number,
   ): Promise<TaskDTO[]> {
-    const canAccess = await this.taskListService.checkMemberAccess(taskListId, user.userId);
-    if (!canAccess) throw new NotFoundException();
+    // const canAccess = await this.taskListService.checkMemberAccess(taskListId, user.userId);
+    // if (!canAccess) throw new NotFoundException();
 
     return this.service.fetchListOfTaskByTaskListId(taskListId);
   }

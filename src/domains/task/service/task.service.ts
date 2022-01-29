@@ -42,6 +42,7 @@ export class TaskService {
   // }
 
   public async fetchListOfTaskByTaskListId(taskListId: number): Promise<TaskDTO[]> {
+    console.log('taskListId, ', taskListId);
     const listOfTask = await this.repository.find({
       where: { isArchived: false },
       order: { created_at: 'ASC' },
@@ -52,9 +53,19 @@ export class TaskService {
     listOfTask.forEach(task => mapOfTask[task.id] = task);
 
     const listOfConnect = await this.connectRepository.find({
-      where: { taskListId },
+      where: { taskListId, isArchived: false },
       order: { taskId: 'ASC' }
     });
+
+    console.table(listOfTask);
+
+    console.table(listOfConnect);
+
+    console.table(listOfConnect.map(item => ({
+      id: item.taskId,
+      caption: mapOfTask[item.taskId].caption,
+      description: mapOfTask[item.taskId].description,
+    })));
 
     return listOfConnect.map(item => ({
       id: item.taskId,
@@ -72,16 +83,16 @@ export class TaskService {
       description: data.description,
     });
 
-    // const createtedTaskListConnect = await this.connectRepository.save({
-    //   taskList,
-    //   task: createdTask,
-    //   isArchived: false,
-    // })
+    await this.connectRepository.save({
+      taskList,
+      task: createdTask,
+      isArchived: false,
+    })
 
     return{
       id: createdTask.id,
       caption: createdTask.caption,
-      description: createdTask.caption,
+      description: createdTask.description,
       // listOfTaskListId: [
       //   createtedTaskListConnect.taskListId
       // ]
@@ -115,6 +126,16 @@ export class TaskService {
   public async removeTask(taskId: number): Promise<void> {
     const task = await this.repository.findOne(taskId);
     if(!task) throw new NotFoundException();
+
+    const listOfConnect = await this.connectRepository.find({
+      where: { taskId, isArchived: false },
+      order: { taskListId: 'ASC' }
+    });
+
+    listOfConnect.forEach(connect => {
+      connect.isArchived = true;
+      this.connectRepository.save(connect);
+    })
 
     task.isArchived = true;
 
