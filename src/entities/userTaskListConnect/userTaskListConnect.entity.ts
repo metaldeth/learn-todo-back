@@ -7,14 +7,14 @@ export class UserTaskListConnectEntity{
   @PrimaryColumn({ type: 'int' })
   userId: number;
 
-  @ManyToOne(() => UserEntity, user => user.taskListConnect, { onDelete: 'CASCADE', primary: true })
+  @ManyToOne(() => UserEntity, user => user.listOfTaskList, { onDelete: 'CASCADE', primary: true })
   @JoinColumn()
   user: UserEntity;
 
   @PrimaryColumn({ type: 'int' })
   taskListId: number;
 
-  @ManyToOne(() => TaskListEntity, taskList => taskList.userConnect, { onDelete: 'CASCADE', primary: true })
+  @ManyToOne(() => TaskListEntity, taskList => taskList.listOfUserConnect, { onDelete: 'CASCADE', primary: true })
   @JoinColumn()
   taskList: TaskListEntity;
 

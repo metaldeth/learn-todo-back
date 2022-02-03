@@ -69,16 +69,37 @@ export class TaskController {
   @ApiBody({ type: EditTaskDTO })
   @ApiResponse({ type: TaskDTO, status: 200 })
   @ApiParam({ name: 'taskId', description: 'ID for the task' })
+  @ApiParam({ name: 'taskListId', description: 'ID for the taskList' })
   @UseGuards(JwtAuthGuard)
-  @Put('/task/:taskId')
+  @Put('/taskList/:taskListId/task/:taskId')
   public async updateTask(
     @User() user: UserData,
     @Param('taskId') taskId: number,
+    @Param('taskListId') taskListId: number,
     @Body() taskDTO: EditTaskDTO,
   ): Promise<TaskDTO> {
     const canAccess = await this.service.checkAccess(taskId, user.userId);
     if (!canAccess) throw new NotFoundException();
-    return this.service.editTask({data: taskDTO, taskId});
+    return this.service.editTask({data: taskDTO, taskId, taskListId});
+  }
+
+  @ApiOperation({ summary: 'Remove the task by taskId and taskListId' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: 200, description: "Response hasn't body" })
+  @ApiParam({ name: 'taskId', description: 'ID for the task' })
+  @ApiParam({ name: 'taskListId', description: 'ID for the taskList' })
+  @UseGuards(JwtAuthGuard)
+  @Delete('/taskList/:taskListId/task/:taskId')
+  public async removeOneTask(
+    @User() user: UserData,
+    @Param('taskId') taskId: number,
+    @Param('taskListId') taskListId: number,
+  ): Promise<void> {
+    const canTaskListAccess = await this.taskListService.checkMemberAccess( taskListId, user.userId );
+    if(!canTaskListAccess) throw new NotFoundException();
+    const canTaskAccess = await this.service.checkAccess(taskId, user.userId);
+    if (!canTaskAccess) throw new NotFoundException();
+    return this.service.removeOneTask(taskId, taskListId);
   }
 
   @ApiOperation({ summary: 'Remove the task by ID' })

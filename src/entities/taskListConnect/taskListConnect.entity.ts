@@ -4,20 +4,23 @@ import { TaskListEntity } from "../taskList/taskList.entity";
 
 @Entity({ name: 'TaskListConnect' })
 export class TaskListConnectEntity {
+  @Column({ type: 'boolean', default: 'false' })
+  isArchived: boolean;
+
+  @Column({ type: 'boolean', default: 'false' })
+  isComplete: boolean;
+
   @PrimaryColumn({ type: 'int' })
   taskId: number;
 
-  @ManyToOne(() => TaskEntity, (task) => task.connect, { onDelete: 'CASCADE', primary: true })
+  @ManyToOne(() => TaskEntity, (task) => task.listOfTaskListConnect, { onDelete: 'CASCADE', primary: true })
   @JoinColumn()
   task: TaskEntity;
 
   @PrimaryColumn({ type: 'int' })
   taskListId: number;
 
-  @ManyToOne(() => TaskListEntity, (taskList) => taskList.connect, { onDelete: 'CASCADE', primary: true })
+  @ManyToOne(() => TaskListEntity, (taskList) => taskList.listOfUserConnect, { onDelete: 'CASCADE', primary: true })
   @JoinColumn()
   taskList: TaskListEntity;
-
-  @Column({ type: 'boolean', default: 'false' })
-  isArchived: boolean;
 }

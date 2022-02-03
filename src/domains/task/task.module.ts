@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { ComentEntity } from "src/entities/coment/coment.entity";
+import { CommentEntity } from "src/entities/comment/comment.entity";
 import { TaskEntity } from "src/entities/task/task.entity";
 import { TaskListEntity } from "src/entities/taskList/taskList.entity";
 import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConnect.entity";
@@ -20,7 +20,7 @@ import {
     TaskEntity,
     TaskListEntity,
     TaskListConnectEntity,
-    ComentEntity,
+    CommentEntity,
     UserEntity,
     UserTaskListConnectEntity,
   ])],

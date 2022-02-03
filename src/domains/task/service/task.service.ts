@@ -9,6 +9,7 @@ import { CreateTaskDTO, EditTaskDTO, TaskDTO } from "../dto/task";
 export type EditTaskRes = {
   taskId: number,
   data: EditTaskDTO,
+  taskListId: number;
 }
 
 @Injectable()
@@ -42,35 +43,17 @@ export class TaskService {
   // }
 
   public async fetchListOfTaskByTaskListId(taskListId: number): Promise<TaskDTO[]> {
-    console.log('taskListId, ', taskListId);
-    const listOfTask = await this.repository.find({
-      where: { isArchived: false },
-      order: { created_at: 'ASC' },
-    })
-
-    const mapOfTask: Record<number, TaskDTO> = {};
-
-    listOfTask.forEach(task => mapOfTask[task.id] = task);
-
     const listOfConnect = await this.connectRepository.find({
       where: { taskListId, isArchived: false },
-      order: { taskId: 'ASC' }
+      order: { taskId: 'ASC' },
+      relations: [ 'task' ],
     });
 
-    console.table(listOfTask);
-
-    console.table(listOfConnect);
-
-    console.table(listOfConnect.map(item => ({
-      id: item.taskId,
-      caption: mapOfTask[item.taskId].caption,
-      description: mapOfTask[item.taskId].description,
-    })));
-
-    return listOfConnect.map(item => ({
-      id: item.taskId,
-      caption: mapOfTask[item.taskId].caption,
-      description: mapOfTask[item.taskId].description,
+    return listOfConnect.map(connect => ({
+      id: connect.task.id,
+      caption: connect.task.caption,
+      description: connect.task.description,
+      isComplete: connect.isComplete
     }));
   }
 
@@ -83,7 +66,7 @@ export class TaskService {
       description: data.description,
     });
 
-    await this.connectRepository.save({
+    const connect = await this.connectRepository.save({
       taskList,
       task: createdTask,
       isArchived: false,
@@ -93,34 +76,57 @@ export class TaskService {
       id: createdTask.id,
       caption: createdTask.caption,
       description: createdTask.description,
-      // listOfTaskListId: [
-      //   createtedTaskListConnect.taskListId
-      // ]
+      isComplete: connect.isArchived,
     };
   }
 
   public async editTask(dataRes: EditTaskRes): Promise<TaskDTO> {
-    const { data, taskId } = dataRes;
+    const { data, taskId, taskListId } = dataRes;
 
     const task = await this.repository.findOne(taskId);
     if(!task) throw new NotFoundException();
 
+    const connect = await this.connectRepository.findOne({ taskId, taskListId });
+    if(!connect) throw new NotFoundException();
+
     task.caption = data.caption;
     task.description = data.description;
+    connect.isComplete = data.isComplete;
 
     const updatedTask = await this.repository.save(task);
+    const updatedConnect = await this.connectRepository.save(connect);
 
-    // const listOfConnect = await this.connectRepository.find({
-    //   where: { isArchived: false, taskId: task.id },
-    //   order: { taskListId: 'ASC' }
-    // })
 
     return{
       id: updatedTask.id,
       caption: updatedTask.caption,
       description: updatedTask.description,
-      // listOfTaskListId: listOfConnect.map(connect => connect.taskListId),
+      isComplete: updatedConnect.isComplete,
     };
+  }
+
+  public async removeOneTask(taskId: number, taskListId: number): Promise<void> {
+    const task = await this.repository.findOne(taskId);
+    if(!task) throw new NotFoundException();
+
+    const taskList = await this.taskListRepository.findOne(taskListId);
+    if(!taskList) throw new NotFoundException();
+
+    const connect = await this.connectRepository.findOne({ taskId, taskListId })
+    if(!connect) throw new NotFoundException();
+
+    connect.isArchived = true;
+
+    await this.connectRepository.save(connect);
+
+    const listOfConnect = await this.connectRepository.find({
+      where: { taskId, isArchived: false },
+      order: { taskListId: 'ASC' }
+    })
+
+    !listOfConnect.length && (task.isArchived = true);
+    
+    await this.repository.save(task);
   }
 
   public async removeTask(taskId: number): Promise<void> {
@@ -132,10 +138,12 @@ export class TaskService {
       order: { taskListId: 'ASC' }
     });
 
-    listOfConnect.forEach(connect => {
+    const listOfConnectPromise = listOfConnect.map(connect => {
       connect.isArchived = true;
-      this.connectRepository.save(connect);
+      return this.connectRepository.save(connect);
     })
+
+    await Promise.all(listOfConnectPromise);
 
     task.isArchived = true;
 

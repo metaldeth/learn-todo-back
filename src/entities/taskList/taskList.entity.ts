@@ -10,8 +10,8 @@ export class TaskListEntity extends BasicEntity {
     caption: string;
 
     @ManyToOne(() => TaskListConnectEntity, connect => connect.taskList, { onDelete: 'CASCADE' })
-    connect: TaskListConnectEntity[];
+    listOfTaskListConnect: TaskListConnectEntity[];
 
     @ManyToOne(() => UserTaskListConnectEntity, userConnect => userConnect.taskList, { onDelete: 'CASCADE' })
-    userConnect: UserTaskListConnectEntity[];
+    listOfUserConnect: UserTaskListConnectEntity[];
 }

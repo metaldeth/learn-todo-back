@@ -19,6 +19,8 @@ export class TaskListService {
     private repository: Repository<TaskListEntity>,
     @InjectRepository(UserTaskListConnectEntity)
     private connectUserRepository: Repository<UserTaskListConnectEntity>,
+    @InjectRepository(TaskListConnectEntity)
+    private connectTaskRepository: Repository<TaskListConnectEntity>,
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
   ){}
@@ -41,67 +43,17 @@ export class TaskListService {
   }
 
   public async fetchListOfTaskList(userId: number): Promise<TaskListDTO[]> {
-    const listOfUser = await this.userRepository.find({
-      where: { isArchived: false },
-      order: { created_at: 'ASC' },
-    })
-    const mapOfUserName: Record<number, string> = {};
-    if(!listOfUser[0]) throw new NotFoundException();
-    listOfUser.forEach(user => mapOfUserName[user.id] = user.name);
-
     const listOfConnect = await this.connectUserRepository.find({
       where: { userId, isArchived: false },
       order: { taskListId: 'ASC' },
+      relations: [ 'taskList' ],
     });
 
-    const listOfTaskList = await this.repository.find({
-      where: { isArchived: false },
-      order: { created_at: 'ASC' },
-    });
-
-    const mapOfTaskList: Record<number, TaskListEntity> = {};
-
-    listOfTaskList.forEach(taskList => {
-      mapOfTaskList[taskList.id] = taskList;
-    })
-
-    return listOfConnect.map(connect => {
-      const taskList = mapOfTaskList[connect.taskListId];
-      return{
-      id: taskList.id,
-      caption: taskList.caption,
-    }});
+    return listOfConnect.map(connect => ({
+      id: connect.taskList.id,
+      caption: connect.taskList.caption
+    }));
   }
-
-  // public async fetchListOFTaskListByTask(taskId: number, userId: number): Promise<TaskListDTO[]> {
-  //   const listOfUser = await this.userRepository.find({
-  //     where: { isArchived: false },
-  //     order: { created_at: 'ASC' },
-  //   })
-  //   const mapOfUserName: Record<number, string> = {};
-  //   if(!listOfUser[0]) throw new NotFoundException();
-  //   listOfUser.forEach(user => mapOfUserName[user.id] = user.name);
-
-  //   const listOfConnect = await this.connectUserRepository.find({
-  //     where: { userId },
-  //     order: { taskListId: 'ASC' },
-  //   });
-
-  //   const listOfTaskList = await this.repository.find({
-  //     where: { isArchived: false },
-  //     order: { created_at: 'ASC' },
-  //   });
-
-  //   return listOfTaskList.map(taskList => ({
-  //     id: taskList.id,
-  //     caption: taskList.caption,
-  //     listOfMember: listOfConnect.map(connect => ({
-  //       id: connect.userId,
-  //       isOwner: connect.isOwner,
-  //       name: mapOfUserName[connect.userId],
-  //     }))
-  //   }));
-  // }
 
   public async createTaskList(
     userId: number, 
@@ -149,15 +101,27 @@ export class TaskListService {
     const taskList = await this.repository.findOne(taskListId);
     if(!taskList) throw new NotFoundException();
 
-    const listOfConnect = await this.connectUserRepository.find({
-      where: { taskListId },
-      order: { userId: 'ASC' }
-    })
+    const listOfUserConnect = await this.connectUserRepository.find({
+      where: { taskListId, isArchived: false },
+      order: { userId: 'ASC' },
+    });
 
-    listOfConnect.forEach(async connect => {
+    const listOfUserConnectPromise = listOfUserConnect.map(connect => {
       connect.isArchived = true;
-      await this.connectUserRepository.save(connect);
-    })
+      return this.connectUserRepository.save(connect);
+    });
+
+    const listOfTaskConnect = await this.connectTaskRepository.find({
+      where: { taskListId, isArchived: false },
+      order: { taskId: 'ASC' },
+    });
+
+    const listOfTaskConnectPromise = listOfTaskConnect.map(connect => {
+      connect.isArchived = true;
+      return this.connectTaskRepository.save(connect);
+    });
+
+    await Promise.all([listOfUserConnectPromise, listOfTaskConnectPromise]);
 
     taskList.isArchived = true;
 

@@ -9,4 +9,7 @@ export class TaskDTO {
 
   @ApiProperty({ description: 'The description of the task' })
   description: string;
+
+  @ApiProperty({ description: 'The flag isComplete of the task by this taskList' })
+  isComplete: boolean;
 }

@@ -1,8 +1,8 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsString } from "class-validator";
 
-export class CreateComentDTO {
-  @ApiProperty({ description: 'The caption of the coment' })
+export class CreateCommentDTO {
+  @ApiProperty({ description: 'The caption of the comment' })
   @IsString()
   caption: string;
 }
