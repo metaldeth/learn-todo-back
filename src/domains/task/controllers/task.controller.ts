@@ -46,6 +46,22 @@ export class TaskController {
     return this.service.fetchListOfTaskByTaskListId(taskListId);
   }
 
+  @ApiOperation({ summary: 'Get list of task by taskListId' })
+  @ApiBearerAuth()
+  @ApiResponse({ type: TaskDTO, isArray: true, status: 200 })
+  @ApiParam({ name: 'taskListId', description: 'Id of the taskList' })
+  @UseGuards(JwtAuthGuard)
+  @Get('/taskList/:taskListId/task/isComplete')
+  public async getListOfCompletedTask(
+    @User() user: UserData,
+    @Param('taskListId') taskListId: number,
+  ): Promise<TaskDTO[]> {
+    // const canAccess = await this.taskListService.checkMemberAccess(taskListId, user.userId);
+    // if (!canAccess) throw new NotFoundException();
+
+    return this.service.fetchListOfCompletedTaskByTaskListId(taskListId);
+  }
+
   @ApiOperation({ summary: 'Create a task by taskListId' })
   @ApiBearerAuth()
   @ApiBody({ type: CreateTaskDTO })

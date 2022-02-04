@@ -7,6 +7,6 @@ export class CommentDTO {
   @ApiProperty({ description: 'The caption of the comment' })
   caption: string;
 
-  @ApiProperty({ description: 'The id of the task' })
-  taskId: number;
+  @ApiProperty({ description: 'The name of the user' })
+  userName: string;
 }

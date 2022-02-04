@@ -7,12 +7,14 @@ import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConn
 import { UserEntity } from "src/entities/user/user.entity";
 import { UserTaskListConnectEntity } from "src/entities/userTaskListConnect/userTaskListConnect.entity";
 import { 
+  CommentController,
   TaskController, 
-  TaskListController 
+  TaskListController,
 } from "./controllers";
 import { 
   TaskListService, 
-  TaskService 
+  TaskService,
+  CommentService
 } from "./service";
 
 @Module({
@@ -27,10 +29,12 @@ import {
   providers: [
     TaskListService,
     TaskService,
+    CommentService,
   ],
   controllers: [
     TaskListController,
     TaskController,
+    CommentController,
   ],
 })
 

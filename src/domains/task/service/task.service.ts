@@ -29,22 +29,24 @@ export class TaskService {
     return !!task; //todo
   }
 
-  // public async fetchListOfTask(): Promise<TaskDTO[]> {
-  //   const listOfTask = await this.repository.find({
-  //     where: { isArchived: false },
-  //     order: { created_at: 'ASC' }
-  //   });
-
-  //   return listOfTask.map(item => ({
-  //     id: item.id,
-  //     caption: item.caption,
-  //     description: item.description
-  //   }));
-  // }
-
   public async fetchListOfTaskByTaskListId(taskListId: number): Promise<TaskDTO[]> {
     const listOfConnect = await this.connectRepository.find({
-      where: { taskListId, isArchived: false },
+      where: { taskListId, isArchived: false, isComplete: false },
+      order: { taskId: 'ASC' },
+      relations: [ 'task' ],
+    });
+
+    return listOfConnect.map(connect => ({
+      id: connect.task.id,
+      caption: connect.task.caption,
+      description: connect.task.description,
+      isComplete: connect.isComplete
+    }));
+  }
+
+  public async fetchListOfCompletedTaskByTaskListId(taskListId: number): Promise<TaskDTO[]> {
+    const listOfConnect = await this.connectRepository.find({
+      where: { taskListId, isArchived: false, isComplete: true },
       order: { taskId: 'ASC' },
       relations: [ 'task' ],
     });
