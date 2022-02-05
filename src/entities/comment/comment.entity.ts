@@ -18,7 +18,7 @@ export class CommentEntity extends BasicEntity {
   task: TaskEntity;
 
   @Column({ type: 'int' })
-  useId: number;
+  userId: number;
 
   @ManyToOne(() => UserEntity, user => user.listOfComment, { onDelete: 'CASCADE' })
   user: UserEntity;

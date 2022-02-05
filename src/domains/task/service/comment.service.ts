@@ -30,7 +30,7 @@ export class CommentService {
   public async fetchListOfCommentByTaskId(taskId: number): Promise<CommentDTO[]> {
     const listOfComment = await this.repository.find({
       where: { taskId, isArchived: false },
-      order: { created_at: 'ASC' },
+      order: { created_at: 'DESC' },
       relations: [ 'user' ],
     });
 
