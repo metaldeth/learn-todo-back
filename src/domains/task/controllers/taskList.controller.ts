@@ -63,7 +63,7 @@ export class TaskListController {
   ): Promise<TaskListDTO> {
     const canAccess = await this.service.checkAccess(taskListId, user.userId);
     if (!canAccess) throw new NotFoundException();
-    return this.service.editTaskList({data: taskListDTO, taskListId});
+    return this.service.editTaskList({data: taskListDTO, taskListId, userId: user.userId});
   }
 
   @ApiOperation({ summary: 'Remove the task list by ID' })

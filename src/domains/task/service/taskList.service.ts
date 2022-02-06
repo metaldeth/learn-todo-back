@@ -5,11 +5,12 @@ import { TaskListConnectEntity } from "src/entities/taskListConnect/taskListConn
 import { UserEntity } from "src/entities/user/user.entity";
 import { UserTaskListConnectEntity } from "src/entities/userTaskListConnect/userTaskListConnect.entity";
 import { Repository } from "typeorm";
-import { CreateTaskListDTO, EditTaskListDTO, MemberByTaskList, TaskListDTO } from "../dto/taskList";
+import { CreateTaskListDTO, EditTaskListDTO, TaskListDTO } from "../dto/taskList";
 
 export type EditTaskListRes = {
   taskListId: number,
   data: EditTaskListDTO,
+  userId: number;
 }
 
 @Injectable()
@@ -51,7 +52,8 @@ export class TaskListService {
 
     return listOfConnect.map(connect => ({
       id: connect.taskList.id,
-      caption: connect.taskList.caption
+      caption: connect.taskList.caption,
+      isFavorite: connect.isFavorite,
     }));
   }
 
@@ -65,35 +67,37 @@ export class TaskListService {
     const createdTaskList = await this.repository.save(data);
 
     const createdConnect = await this.connectUserRepository.save({
-      isArchived: false,
       isOwner: true,
       user,
       taskList: createdTaskList
     })
 
-    console.table(createdTaskList);
-    console.log('3')
-    console.table(createdConnect);
-
     return{
       id: createdTaskList.id,
       caption: createdTaskList.caption,
+      isFavorite: createdConnect.isFavorite,
     };
   }
 
   public async editTaskList(dataRes: EditTaskListRes): Promise<TaskListDTO> {
-    const { data, taskListId } = dataRes;
+    const { data, taskListId, userId } = dataRes;
 
     const taskList = await this.repository.findOne(taskListId);
     if(!taskList) throw new NotFoundException();
 
+    const connect = await this.connectUserRepository.findOne({ taskListId, userId });
+    if(!connect) throw new NotFoundException();
+
     taskList.caption = data.caption;
+    connect.isFavorite = data.isFavorite;
 
     const updatedTaskList = await this.repository.save(taskList);
+    const updatedConnect = await this.connectUserRepository.save(connect);
 
     return{
       id: updatedTaskList.id,
       caption: updatedTaskList.caption,
+      isFavorite: updatedConnect.isFavorite,
     };
   }
 

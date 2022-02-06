@@ -18,9 +18,12 @@ export class UserTaskListConnectEntity{
   @JoinColumn()
   taskList: TaskListEntity;
 
-  @Column({ type: 'bool' })
+  @Column({ type: 'boolean' })
   isOwner: boolean;
 
   @Column({ type: 'boolean', default: 'false' })
   isArchived: boolean;
+
+  @Column({ type: 'boolean', default: 'false' })
+  isFavorite: boolean;
 }
